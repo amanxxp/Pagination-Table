@@ -1,15 +1,7 @@
+import { Product } from "../interfaces/Interface";
 import fetchProductsForPage from "./fetchProductsForPage";
 import { Dispatch, SetStateAction } from "react";
 
-interface Product {
-  id: number;
-  title: string;
-  place_of_origin: string;
-  artist_display: string;
-  inscriptions: string;
-  date_start: number;
-  date_end: number;
-}
 
 export default async function loadAdditionalPages(
   pagesToLoad: number[], 

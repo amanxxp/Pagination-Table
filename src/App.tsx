@@ -1,10 +1,12 @@
 import ArtworkTable from "./components/ArtWorkTable";
-import Help from "./components/Help"
 const App = () => {
   return (
     <>
-      {/* <Help/> */}
-      <ArtworkTable/>
+      <div className="text-6xl text-center font-bold mt-4">
+        Checklist Assignment
+      </div>
+      <ArtworkTable />
+      
     </>
   );
 };

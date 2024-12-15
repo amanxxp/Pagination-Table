@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { SelectButton, SelectButtonChangeEvent } from "primereact/selectbutton";
@@ -7,23 +7,29 @@ import { Checkbox } from "primereact/checkbox";
 import fetchProductsForPage from "../features/fetchProductsForPage";
 import loadAdditionalPages from "../features/loadAdditionalPages";
 import handleBulkSelect from "../features/handleBulkSelect";
-import {Product,SizeOption} from "../interfaces/Interface";
+import { Product, SizeOption } from "../interfaces/Interface";
+import { OverlayPanel } from "primereact/overlaypanel";
+import { Button } from "primereact/button";
 
 export default function ArtworkTable() {
   const [products, setProducts] = useState<Product[]>([]);
   const [page, setPage] = useState<number>(1);
   const [totalRecords, setTotalRecords] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
-
+  const op = useRef<OverlayPanel>(null);
   // State to manage selected rows across pages
-  const [selectedProducts, setSelectedProducts] = useState<{[key: number]: Product;}>({});
+  const [selectedProducts, setSelectedProducts] = useState<{
+    [key: number]: Product;
+  }>({});
 
   const [sizeOptions] = useState<SizeOption[]>([
     { label: "Small", value: "small" },
     { label: "Normal", value: "normal" },
     { label: "Large", value: "large" },
   ]);
-  const [size, setSize] = useState<"small" | "normal" | "large">(sizeOptions[1].value);
+  const [size, setSize] = useState<"small" | "normal" | "large">(
+    sizeOptions[0].value
+  );
 
   // New states for row selection
   const [rowsToSelect, setRowsToSelect] = useState<number>(1);
@@ -33,7 +39,10 @@ export default function ArtworkTable() {
   // Main fetch effect for the current page
   useEffect(() => {
     const fetchProducts = async () => {
-      const { products: fetchedProducts, total } = await fetchProductsForPage(page,setLoading);
+      const { products: fetchedProducts, total } = await fetchProductsForPage(
+        page,
+        setLoading
+      );
       setProducts(fetchedProducts);
       setTotalRecords(total);
     };
@@ -43,7 +52,14 @@ export default function ArtworkTable() {
   // Effect to handle loading additional pages for selection
   useEffect(() => {
     if (pagesToLoad.length > 0) {
-      loadAdditionalPages(pagesToLoad,setLoading,rowsToSelect,selectedProducts,setSelectedProducts,setPagesToLoad);
+      loadAdditionalPages(
+        pagesToLoad,
+        setLoading,
+        rowsToSelect,
+        selectedProducts,
+        setSelectedProducts,
+        setPagesToLoad
+      );
     }
   }, [pagesToLoad, rowsToSelect, selectedProducts]);
 
@@ -53,7 +69,7 @@ export default function ArtworkTable() {
 
   // Handle individual row selection
   const onRowSelect = (product: Product) => {
-    setSelectedProducts((prev) => ({...prev,[product.id]: product,}));
+    setSelectedProducts((prev) => ({ ...prev, [product.id]: product }));
   };
 
   // Handle individual row unselection
@@ -66,8 +82,11 @@ export default function ArtworkTable() {
   const rowSelectionCheckbox = (rowData: Product) => {
     return (
       <Checkbox
+        className="border-2 pb-[21px] border-grey-900 rounded-lg"
         checked={!!selectedProducts[rowData.id]}
-        onChange={(e) => {e.checked?onRowSelect(rowData):onRowUnselect(rowData)}}
+        onChange={(e) => {
+          e.checked ? onRowSelect(rowData) : onRowUnselect(rowData);
+        }}
       />
     );
   };
@@ -80,6 +99,7 @@ export default function ArtworkTable() {
 
     return (
       <Checkbox
+        className="border-2 pb-[21px] border-grey-900 rounded-lg"
         checked={products.length > 0 && allCurrentPageSelected}
         onChange={(e) => {
           if (e.checked) {
@@ -107,28 +127,15 @@ export default function ArtworkTable() {
       />
     );
   };
-
+  const showOverlay = (event: React.SyntheticEvent) => {
+    op.current?.toggle(event);
+  };
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <label>Select Rows:</label>
-          <input
-            type="number"
-            value={rowsToSelect}
-            onChange={(e) => setRowsToSelect(Number(e.target.value))}
-            min="1"
-            className="w-20 p-1 border rounded"
-          />
-          <button
-            onClick={() =>handleBulkSelect(rowsToSelect,products,setSelectedProducts,setPagesToLoad,page)}
-            className="bg-blue-500 text-white px-4 py-1 rounded"
-          >Select Rows
-          </button>
-        </div>
-        <div>
-          <p>Selected Products: {Object.keys(selectedProducts).length}</p>
-        </div>
+      <div className="">
+        <p>No of Selected Rows: {Object.keys(selectedProducts).length}</p>
+      </div>
+      <div className="flex justify-center items-center mb-4">
         <SelectButton
           value={size}
           onChange={(e: SelectButtonChangeEvent) => setSize(e.value)}
@@ -136,7 +143,44 @@ export default function ArtworkTable() {
         />
       </div>
       <div className="card">
+        <div className="mb-4 ml-44">
+          <Button
+            type="button"
+            icon="pi pi-chevron-down"
+            label="Select multiple row"
+            onClick={showOverlay}
+          />
+          <OverlayPanel ref={op}>
+            <div className="flex items-center gap-2">
+              <label>Select Rows:</label>
+              <input
+                type="number"
+                value={rowsToSelect}
+                onChange={(e) => setRowsToSelect(Number(e.target.value))}
+                min="1"
+                className="w-20 p-1 border rounded"
+              />
+              <button
+                onClick={() =>
+                  handleBulkSelect(
+                    rowsToSelect,
+                    products,
+                    setSelectedProducts,
+                    setPagesToLoad,
+                    page
+                  )
+                }
+                className="bg-blue-500 text-white px-4 py-1 rounded"
+              >
+                Select Rows
+              </button>
+            </div>
+          </OverlayPanel>
+        </div>
+      </div>
+      <div className="card">
         <DataTable
+          stripedRows
           value={products}
           rows={10}
           size={size}
@@ -151,6 +195,7 @@ export default function ArtworkTable() {
           />
 
           <Column field="title" header="Title" />
+
           <Column field="place_of_origin" header="Place of Origin" />
           <Column field="artist_display" header="Artist Display" />
           <Column field="inscriptions" header="Inscriptions" />
