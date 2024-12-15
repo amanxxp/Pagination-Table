@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { SelectButton, SelectButtonChangeEvent } from "primereact/selectbutton";
 import { Paginator, PaginatorPageChangeEvent } from "primereact/paginator";
 import { Checkbox } from "primereact/checkbox";
-import { Button } from "primereact/button";
 
 interface Product {
   id: number;
@@ -28,7 +27,9 @@ export default function ArtworkTable() {
   const [loading, setLoading] = useState<boolean>(false);
 
   // State to manage selected rows across pages
-  const [selectedProducts, setSelectedProducts] = useState<{[key: number]: Product}>({});
+  const [selectedProducts, setSelectedProducts] = useState<{
+    [key: number]: Product;
+  }>({});
 
   const [sizeOptions] = useState<SizeOption[]>([
     { label: "Small", value: "small" },
@@ -39,23 +40,33 @@ export default function ArtworkTable() {
     sizeOptions[1].value
   );
 
+  const truncateText = (text: string, wordLimit: number = 8): string => {
+    const words = text.split(" ");
+    if (words.length > wordLimit) {
+      return words.slice(0, wordLimit).join(" ") + "...";
+    }
+    return text;
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `https://api.artic.edu/api/v1/artworks?page=${page}&limit=10`
+          `https://api.artic.edu/api/v1/artworks?page=${page}`
         );
         const data = await response.json();
-        const transformedProducts = data.data.map((item: any, index: number) => ({
-          id: item.id, // Ensure each product has a unique identifier
-          title: item.title || "N/A",
-          place_of_origin: item.place_of_origin || "N/A",
-          artist_display: item.artist_display || "N/A",
-          inscriptions: item.inscriptions || "N/A",
-          date_start: item.date_start || 0,
-          date_end: item.date_end || 0,
-        }));
+        const transformedProducts = data.data
+          .slice(0, 5) // Limit to the first 5 items
+          .map((item: any) => ({
+            id: item.id, // Ensure each product has a unique identifier
+            title: item.title || "N/A",
+            place_of_origin: truncateText(item.place_of_origin || "N/A"),
+            artist_display: truncateText(item.artist_display || "N/A"),
+            inscriptions: truncateText(item.inscriptions || "N/A"),
+            date_start: item.date_start || 0,
+            date_end: item.date_end || 0,
+          }));
 
         setProducts(transformedProducts);
         setTotalRecords(data.pagination.total);
@@ -75,9 +86,9 @@ export default function ArtworkTable() {
 
   // Handle individual row selection
   const onRowSelect = (product: Product) => {
-    setSelectedProducts(prev => ({
+    setSelectedProducts((prev) => ({
       ...prev,
-      [product.id]: product
+      [product.id]: product,
     }));
   };
 
@@ -105,8 +116,8 @@ export default function ArtworkTable() {
 
   // Custom header checkbox to select/deselect all rows on current page
   const headerSelectionCheckbox = () => {
-    const allCurrentPageSelected = products.every(product => 
-      selectedProducts[product.id]
+    const allCurrentPageSelected = products.every(
+      (product) => selectedProducts[product.id]
     );
 
     return (
@@ -115,18 +126,21 @@ export default function ArtworkTable() {
         onChange={(e) => {
           if (e.checked) {
             // Select all rows on current page
-            const newSelectedProducts = products.reduce((acc, product) => ({
-              ...acc,
-              [product.id]: product
-            }), {});
-            setSelectedProducts(prev => ({
+            const newSelectedProducts = products.reduce(
+              (acc, product) => ({
+                ...acc,
+                [product.id]: product,
+              }),
+              {}
+            );
+            setSelectedProducts((prev) => ({
               ...prev,
-              ...newSelectedProducts
+              ...newSelectedProducts,
             }));
           } else {
             // Unselect all rows on current page
             const newSelectedProducts = { ...selectedProducts };
-            products.forEach(product => {
+            products.forEach((product) => {
               delete newSelectedProducts[product.id];
             });
             setSelectedProducts(newSelectedProducts);
@@ -135,46 +149,8 @@ export default function ArtworkTable() {
       />
     );
   };
-
-  // Custom selection panel to show selected items
-  const selectionPanel = () => {
-    const selectedProductsList = Object.values(selectedProducts);
-
-    return (
-      <div className="p-4 bg-gray-100 rounded">
-        <h3 className="text-lg font-bold mb-2">
-          Selected Artworks: {selectedProductsList.length}
-        </h3>
-        {selectedProductsList.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {selectedProductsList.map(product => (
-              <div 
-                key={product.id} 
-                className="bg-white p-2 rounded shadow-sm flex justify-between items-center"
-              >
-                <span className="truncate">{product.title}</span>
-                <Button 
-                  icon="pi pi-times" 
-                  className="p-button-text p-button-danger p-button-sm"
-                  onClick={() => onRowUnselect(product)}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-        {selectedProductsList.length === 0 && (
-          <p className="text-gray-500">No artworks selected</p>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="p-4">
-      {/* Selection Panel */}
-      {selectionPanel()}
-
-      {/* Size Selection */}
       <div className="flex justify-center mb-4">
         <SelectButton
           value={size}
@@ -182,8 +158,6 @@ export default function ArtworkTable() {
           options={sizeOptions}
         />
       </div>
-
-      {/* Data Table */}
       <div className="card">
         <DataTable
           value={products}
@@ -192,15 +166,13 @@ export default function ArtworkTable() {
           loading={loading}
           tableStyle={{ minWidth: "50rem" }}
         >
-          {/* Checkbox Column */}
-          <Column 
-            header={headerSelectionCheckbox} 
+          <Column
+            header={headerSelectionCheckbox}
             body={rowSelectionCheckbox}
             headerClassName="w-[50px]"
             bodyClassName="w-[50px]"
           />
 
-          {/* Other Columns */}
           <Column field="title" header="Title" />
           <Column field="place_of_origin" header="Place of Origin" />
           <Column field="artist_display" header="Artist Display" />
@@ -208,8 +180,6 @@ export default function ArtworkTable() {
           <Column field="date_start" header="Date Start" />
           <Column field="date_end" header="Date End" />
         </DataTable>
-
-        {/* Pagination */}
         <Paginator
           first={(page - 1) * 10}
           rows={10}
