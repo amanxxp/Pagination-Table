@@ -1,10 +1,12 @@
-
+import BasicDemo from "./components/BasicDemo";
+import Help from "./components/Help"
 const App = () => {
   return (
-    <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
-  )
-}
+    <>
+      {/* <BasicDemo /> */}
+      <Help/>
+    </>
+  );
+};
 
-export default App
+export default App;
